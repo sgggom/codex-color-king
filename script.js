@@ -340,11 +340,30 @@ function setupEvents() {
     dragMoved = false;
     dragStartIdx = Number(target.dataset.idx);
     lastDragIdx = dragStartIdx;
+    if (e.pointerType === 'touch') {
+      flagCell(dragStartIdx);
+    }
   });
 
   boardEl.addEventListener('pointerover', (e) => {
     if (!dragging) return;
+    if (e.pointerType === 'touch') return;
     const target = e.target.closest('.cell');
+    if (!target) return;
+    const idx = Number(target.dataset.idx);
+    if (idx === lastDragIdx) return;
+    lastDragIdx = idx;
+    dragMoved = true;
+    flagCell(dragStartIdx);
+    flagCell(idx);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    if (e.pointerType !== 'touch') return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el) return;
+    const target = el.closest && el.closest('.cell');
     if (!target) return;
     const idx = Number(target.dataset.idx);
     if (idx === lastDragIdx) return;

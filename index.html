@@ -9,6 +9,7 @@
 <body>
   <div class="app">
     <header class="top">
+      <button id="helpBtn" class="help-btn" aria-label="玩法说明">?</button>
       <div class="title">
         <span class="crown">♛</span>
         <span>Color King</span>
@@ -44,7 +45,47 @@
     <div class="overlay-card">
       <div class="overlay-title">胜利</div>
       <div class="overlay-text">你找到了所有 King。</div>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-label">点击次数</span>
+          <span class="stat-value" id="statClicks">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">滑动标记</span>
+          <span class="stat-value" id="statMarks">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">用时</span>
+          <span class="stat-value" id="statTime">00:00</span>
+        </div>
+      </div>
       <button id="nextBtn" class="btn">下一关</button>
+    </div>
+  </div>
+
+  <div id="difficultyOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-title">选择难度</div>
+      <div class="overlay-text">新游戏初始提示数量</div>
+      <div class="difficulty-actions">
+        <button class="btn diff-btn" data-diff="easy">简单</button>
+        <button class="btn diff-btn" data-diff="medium">中等</button>
+        <button class="btn diff-btn" data-diff="hard">困难</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="overlay" hidden>
+    <div class="overlay-card help-card">
+      <div class="overlay-title">玩法说明</div>
+      <div class="help-text">
+        <p>每种颜色区域中有且只有一个 King。</p>
+        <p>King 的周围 8 格与同一行/列都是非法区，不能再放 King。</p>
+        <p>点击：标记格子。</p>
+        <p>双击：检查是否为 King。</p>
+        <p>按住滑动：标记或取消标记经过的格子。</p>
+      </div>
+      <button id="helpCloseBtn" class="btn">知道了</button>
     </div>
   </div>
 

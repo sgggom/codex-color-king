@@ -6,7 +6,15 @@ const hintBtn = document.getElementById('hintBtn');
 const newBtn = document.getElementById('newBtn');
 const nextBtn = document.getElementById('nextBtn');
 const overlay = document.getElementById('winOverlay');
+const difficultyOverlay = document.getElementById('difficultyOverlay');
+const diffButtons = document.querySelectorAll('.diff-btn');
 const sizeSelect = document.getElementById('sizeSelect');
+const helpBtn = document.getElementById('helpBtn');
+const helpOverlay = document.getElementById('helpOverlay');
+const helpCloseBtn = document.getElementById('helpCloseBtn');
+const statClicksEl = document.getElementById('statClicks');
+const statMarksEl = document.getElementById('statMarks');
+const statTimeEl = document.getElementById('statTime');
 
 let size = Number(sizeSelect.value);
 let level = 1;
@@ -15,8 +23,17 @@ let dragging = false;
 let dragMoved = false;
 let dragStartIdx = -1;
 let lastDragIdx = -1;
+let dragVisited = new Set();
 let suppressClick = false;
 let lastTap = { time: 0, idx: -1 };
+let tapTimerId = null;
+
+const SHOW_ILLEGAL_ON_KING = false;
+let currentDifficulty = 'hard';
+let clickCount = 0;
+let dragMarkCount = 0;
+let startTime = 0;
+let timerId = null;
 
 function randPick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -262,7 +279,23 @@ function revealKing(idx) {
   cell.flagged = false;
   cell.invalid = false;
   state.revealedCount += 1;
-  markIllegalFromKing(idx);
+  if (SHOW_ILLEGAL_ON_KING) {
+    markIllegalFromKing(idx);
+  }
+}
+
+function applyDifficultyReveal(diff) {
+  const count = diff === 'easy' ? 2 : diff === 'medium' ? 1 : 0;
+  if (count === 0) return;
+  const hidden = state.kings.filter((k) => !state.cells[k].revealed);
+  const revealCount = Math.min(count, hidden.length);
+  for (let i = 0; i < revealCount; i += 1) {
+    const pick = randPick(hidden);
+    const index = hidden.indexOf(pick);
+    if (index >= 0) hidden.splice(index, 1);
+    revealKing(pick);
+    updateBoardCell(pick);
+  }
 }
 
 function checkCell(idx) {
@@ -270,7 +303,9 @@ function checkCell(idx) {
   if (cell.revealed) return;
   if (cell.isKing) {
     revealKing(idx);
-    illegalZone(idx).forEach((i) => updateBoardCell(i));
+    if (SHOW_ILLEGAL_ON_KING) {
+      illegalZone(idx).forEach((i) => updateBoardCell(i));
+    }
   } else {
     cell.invalid = true;
     cell.flagged = false;
@@ -287,6 +322,8 @@ function updateBoardCell(idx) {
 
 function checkWin() {
   if (state.revealedCount === state.kings.length) {
+    stopTimer();
+    updateStatsUI();
     overlay.hidden = false;
     if (titleEl) titleEl.classList.add('win-celebration');
     if (boardContainerEl) boardContainerEl.classList.add('win-celebration');
@@ -304,13 +341,13 @@ function toggleFlag(idx) {
   updateBoardCell(idx);
 }
 
-function flagCell(idx) {
+function toggleFlagWithCount(idx, source) {
   const cell = state.cells[idx];
-  if (cell.revealed || cell.invalid) return;
-  if (!cell.flagged) {
-    cell.flagged = true;
-    updateBoardCell(idx);
-  }
+  if (cell.revealed || cell.invalid) return false;
+  cell.flagged = !cell.flagged;
+  updateBoardCell(idx);
+  if (source === 'drag') dragMarkCount += 1;
+  return true;
 }
 
 function setupEvents() {
@@ -322,6 +359,7 @@ function setupEvents() {
       return;
     }
     const idx = Number(target.dataset.idx);
+    clickCount += 1;
     toggleFlag(idx);
   });
 
@@ -340,9 +378,7 @@ function setupEvents() {
     dragMoved = false;
     dragStartIdx = Number(target.dataset.idx);
     lastDragIdx = dragStartIdx;
-    if (e.pointerType === 'touch') {
-      flagCell(dragStartIdx);
-    }
+    dragVisited = new Set([dragStartIdx]);
   });
 
   boardEl.addEventListener('pointerover', (e) => {
@@ -353,9 +389,17 @@ function setupEvents() {
     const idx = Number(target.dataset.idx);
     if (idx === lastDragIdx) return;
     lastDragIdx = idx;
-    dragMoved = true;
-    flagCell(dragStartIdx);
-    flagCell(idx);
+    if (!dragMoved) {
+      dragMoved = true;
+      if (!dragVisited.has(dragStartIdx)) {
+        dragVisited.add(dragStartIdx);
+      }
+      toggleFlagWithCount(dragStartIdx, 'drag');
+    }
+    if (!dragVisited.has(idx)) {
+      dragVisited.add(idx);
+      toggleFlagWithCount(idx, 'drag');
+    }
   });
 
   window.addEventListener('pointermove', (e) => {
@@ -368,9 +412,17 @@ function setupEvents() {
     const idx = Number(target.dataset.idx);
     if (idx === lastDragIdx) return;
     lastDragIdx = idx;
-    dragMoved = true;
-    flagCell(dragStartIdx);
-    flagCell(idx);
+    if (!dragMoved) {
+      dragMoved = true;
+      if (!dragVisited.has(dragStartIdx)) {
+        dragVisited.add(dragStartIdx);
+      }
+      toggleFlagWithCount(dragStartIdx, 'drag');
+    }
+    if (!dragVisited.has(idx)) {
+      dragVisited.add(idx);
+      toggleFlagWithCount(idx, 'drag');
+    }
   });
 
   function resetPointerState() {
@@ -378,9 +430,11 @@ function setupEvents() {
     dragMoved = false;
     dragStartIdx = -1;
     lastDragIdx = -1;
+    dragVisited.clear();
   }
 
   window.addEventListener('pointerup', (e) => {
+    const wasDragMoved = dragMoved;
     dragging = false;
     if (dragMoved) {
       suppressClick = true;
@@ -391,17 +445,30 @@ function setupEvents() {
     dragMoved = false;
     dragStartIdx = -1;
     lastDragIdx = -1;
+    dragVisited.clear();
     if (e.pointerType === 'touch') {
       const target = e.target.closest && e.target.closest('.cell');
       if (!target) return;
       const idx = Number(target.dataset.idx);
       const now = Date.now();
       if (lastTap.idx === idx && now - lastTap.time < 350) {
+        if (tapTimerId) {
+          clearTimeout(tapTimerId);
+          tapTimerId = null;
+        }
         checkCell(idx);
         updateBoardCell(idx);
         lastTap = { time: 0, idx: -1 };
       } else {
         lastTap = { time: now, idx };
+        if (!wasDragMoved) {
+          if (tapTimerId) clearTimeout(tapTimerId);
+          tapTimerId = setTimeout(() => {
+            clickCount += 1;
+            toggleFlag(idx);
+            tapTimerId = null;
+          }, 300);
+        }
       }
     }
   });
@@ -417,36 +484,99 @@ function setupEvents() {
     const pick = randPick(hidden);
     revealKing(pick);
     updateBoardCell(pick);
-    illegalZone(pick).forEach((i) => updateBoardCell(i));
+    if (SHOW_ILLEGAL_ON_KING) {
+      illegalZone(pick).forEach((i) => updateBoardCell(i));
+    }
     checkWin();
   });
 
   newBtn.addEventListener('click', () => {
     overlay.hidden = true;
-    startGame();
+    difficultyOverlay.hidden = false;
   });
 
   nextBtn.addEventListener('click', () => {
     overlay.hidden = true;
     level += 1;
-    startGame();
+    startGame(currentDifficulty);
   });
 
   sizeSelect.addEventListener('change', () => {
     size = Number(sizeSelect.value);
     level = 1;
     overlay.hidden = true;
-    startGame();
+    startGame(currentDifficulty);
+  });
+
+  diffButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const diff = btn.dataset.diff || 'hard';
+      currentDifficulty = diff;
+      difficultyOverlay.hidden = true;
+      startGame(diff);
+    });
+  });
+
+  helpBtn.addEventListener('click', () => {
+    helpOverlay.hidden = false;
+  });
+
+  helpCloseBtn.addEventListener('click', () => {
+    helpOverlay.hidden = true;
+  });
+
+  helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) {
+      helpOverlay.hidden = true;
+    }
   });
 }
 
-function startGame() {
+function startGame(difficulty = 'hard') {
   levelEl.textContent = String(level);
   overlay.hidden = true;
   if (titleEl) titleEl.classList.remove('win-celebration');
   if (boardContainerEl) boardContainerEl.classList.remove('win-celebration');
+  resetStats();
   state = buildState();
   renderBoard();
+  applyDifficultyReveal(difficulty);
+  startTimer();
+}
+
+function resetStats() {
+  clickCount = 0;
+  dragMarkCount = 0;
+  updateStatsUI();
+}
+
+function startTimer() {
+  stopTimer();
+  startTime = Date.now();
+  timerId = window.setInterval(() => {
+    updateStatsUI();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+}
+
+function formatTime(ms) {
+  const total = Math.floor(ms / 1000);
+  const m = String(Math.floor(total / 60)).padStart(2, '0');
+  const s = String(total % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function updateStatsUI() {
+  const elapsed = startTime ? Date.now() - startTime : 0;
+  if (statClicksEl) statClicksEl.textContent = String(clickCount);
+  if (statMarksEl) statMarksEl.textContent = String(dragMarkCount);
+  if (statTimeEl) statTimeEl.textContent = formatTime(elapsed);
 }
 
 setupEvents();

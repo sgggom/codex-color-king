@@ -43,6 +43,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
 
 .title {
@@ -105,6 +106,27 @@ body {
   color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 1px;
+}
+
+.help-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #2b2b40;
+  background: #141421;
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+  transition: all 0.2s ease;
+}
+
+.help-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.4);
 }
 
 .board-container {
@@ -208,7 +230,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.9rem;
+  font-size: 2.2rem;
   color: #ffffff;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
   opacity: 0;
@@ -266,7 +288,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 2.3rem;
   filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
 }
 
@@ -289,7 +311,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.9rem;
+  font-size: 2.2rem;
   color: #ffffff;
   text-shadow: 0 0 10px #ff0000;
   opacity: 0;
@@ -433,12 +455,15 @@ body {
 .overlay[hidden] { display: none; }
 
 .overlay-card {
-  background: #12121a;
-  padding: 22px 24px;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  background: linear-gradient(160deg, #171727 0%, #0f0f1a 100%);
+  padding: 26px 26px 22px;
+  border-radius: 22px;
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.6),
+    0 0 40px rgba(255, 215, 0, 0.12);
   text-align: center;
   border: 1px solid #2b2b40;
+  min-width: min(86vw, 340px);
 }
 
 .overlay-title {
@@ -450,6 +475,63 @@ body {
 }
 
 .overlay-text { margin-bottom: 14px; color: var(--text-secondary); }
+
+.help-card .overlay-title {
+  margin-bottom: 10px;
+}
+
+.help-text {
+  text-align: left;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.help-text p {
+  margin: 0;
+}
+
+.stats {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #121220;
+  border-radius: 12px;
+  border: 1px solid #2b2b40;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  color: var(--accent-gold);
+  font-weight: 700;
+  text-shadow: var(--neon-glow);
+}
+
+.difficulty-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.diff-btn {
+  min-width: 90px;
+  justify-content: center;
+}
 
 @media (max-width: 420px) {
   .tools {

@@ -27,6 +27,7 @@ let dragVisited = new Set();
 let suppressClick = false;
 let lastTap = { time: 0, idx: -1 };
 let tapTimerId = null;
+let lastPointerType = 'mouse';
 
 const SHOW_ILLEGAL_ON_KING = false;
 let currentDifficulty = 'hard';
@@ -352,6 +353,7 @@ function toggleFlagWithCount(idx, source) {
 
 function setupEvents() {
   boardEl.addEventListener('click', (e) => {
+    if (lastPointerType === 'touch') return;
     const target = e.target.closest('.cell');
     if (!target) return;
     if (suppressClick) {
@@ -372,6 +374,7 @@ function setupEvents() {
   });
 
   boardEl.addEventListener('pointerdown', (e) => {
+    lastPointerType = e.pointerType || 'mouse';
     const target = e.target.closest('.cell');
     if (!target) return;
     dragging = true;

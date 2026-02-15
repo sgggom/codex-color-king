@@ -1,4 +1,6 @@
 const boardEl = document.getElementById('board');
+const boardContainerEl = document.querySelector('.board-container');
+const titleEl = document.querySelector('.title');
 const levelEl = document.getElementById('levelNum');
 const hintBtn = document.getElementById('hintBtn');
 const newBtn = document.getElementById('newBtn');
@@ -231,7 +233,8 @@ function renderBoard() {
     const div = document.createElement('div');
     div.className = 'cell';
     div.dataset.idx = String(idx);
-    div.style.background = cell.color;
+    const colorClass = `color-${cell.region % 10}`;
+    div.classList.add(colorClass);
     applyCellState(div, cell);
     boardEl.appendChild(div);
   });
@@ -285,6 +288,12 @@ function updateBoardCell(idx) {
 function checkWin() {
   if (state.revealedCount === state.kings.length) {
     overlay.hidden = false;
+    if (titleEl) titleEl.classList.add('win-celebration');
+    if (boardContainerEl) boardContainerEl.classList.add('win-celebration');
+    setTimeout(() => {
+      if (titleEl) titleEl.classList.remove('win-celebration');
+      if (boardContainerEl) boardContainerEl.classList.remove('win-celebration');
+    }, 800);
   }
 }
 
@@ -345,9 +354,21 @@ function setupEvents() {
     flagCell(idx);
   });
 
+  function resetPointerState() {
+    dragging = false;
+    dragMoved = false;
+    dragStartIdx = -1;
+    lastDragIdx = -1;
+  }
+
   window.addEventListener('pointerup', (e) => {
     dragging = false;
-    if (dragMoved) suppressClick = true;
+    if (dragMoved) {
+      suppressClick = true;
+      setTimeout(() => {
+        suppressClick = false;
+      }, 0);
+    }
     dragMoved = false;
     dragStartIdx = -1;
     lastDragIdx = -1;
@@ -364,6 +385,11 @@ function setupEvents() {
         lastTap = { time: now, idx };
       }
     }
+  });
+
+  window.addEventListener('pointercancel', () => {
+    resetPointerState();
+    suppressClick = false;
   });
 
   hintBtn.addEventListener('click', () => {
@@ -398,6 +424,8 @@ function setupEvents() {
 function startGame() {
   levelEl.textContent = String(level);
   overlay.hidden = true;
+  if (titleEl) titleEl.classList.remove('win-celebration');
+  if (boardContainerEl) boardContainerEl.classList.remove('win-celebration');
   state = buildState();
   renderBoard();
 }

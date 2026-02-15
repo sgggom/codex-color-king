@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color King</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="title">
+        <span class="crown">♛</span>
+        <span>Color King</span>
+      </div>
+      <div class="level">关卡 <span id="levelNum">1</span></div>
+    </header>
+
+    <main>
+      <div id="board" class="board" aria-label="game board"></div>
+    </main>
+
+    <footer class="tools">
+      <button id="hintBtn" class="btn">提示</button>
+      <button id="newBtn" class="btn">新游戏</button>
+      <div class="size">
+        <label for="sizeSelect">棋盘</label>
+        <select id="sizeSelect">
+          <option value="4">4x4</option>
+          <option value="5">5x5</option>
+          <option value="6" selected>6x6</option>
+          <option value="7">7x7</option>
+          <option value="8">8x8</option>
+          <option value="9">9x9</option>
+          <option value="10">10x10</option>
+        </select>
+      </div>
+    </footer>
+  </div>
+
+  <div id="winOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-title">胜利</div>
+      <div class="overlay-text">你找到了所有 King。</div>
+      <button id="nextBtn" class="btn">下一关</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

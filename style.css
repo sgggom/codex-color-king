@@ -256,6 +256,16 @@ body {
   animation-delay: 0s, 0.5s;
 }
 
+.cell.king.win-pop {
+  animation: king-pop 0.6s ease-out, king-pulse 2s ease-in-out infinite;
+}
+
+@keyframes king-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
 @keyframes king-reveal {
   0% { transform: scale(0.5); opacity: 0; }
   50% { transform: scale(1.1); }
@@ -422,25 +432,6 @@ body {
   transform: translateY(-2px) scale(1.05);
 }
 
-.size {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #13131b;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #2b2b40;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.size select {
-  border: none;
-  background: transparent;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
 
 .overlay {
   position: fixed;
@@ -540,6 +531,4 @@ body {
   }
 
   .btn { width: 100%; }
-
-  .size { justify-content: space-between; }
 }

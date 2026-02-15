@@ -8,7 +8,6 @@ const nextBtn = document.getElementById('nextBtn');
 const overlay = document.getElementById('winOverlay');
 const difficultyOverlay = document.getElementById('difficultyOverlay');
 const diffButtons = document.querySelectorAll('.diff-btn');
-const sizeSelect = document.getElementById('sizeSelect');
 const helpBtn = document.getElementById('helpBtn');
 const helpOverlay = document.getElementById('helpOverlay');
 const helpCloseBtn = document.getElementById('helpCloseBtn');
@@ -16,7 +15,7 @@ const statClicksEl = document.getElementById('statClicks');
 const statMarksEl = document.getElementById('statMarks');
 const statTimeEl = document.getElementById('statTime');
 
-let size = Number(sizeSelect.value);
+let size = 6;
 let level = 1;
 let state = null;
 let dragging = false;
@@ -36,6 +35,20 @@ let clickCount = 0;
 let dragMarkCount = 0;
 let startTime = 0;
 let timerId = null;
+
+const SIZE_OPTIONS = [5, 6, 7, 8, 9];
+
+function weightedSizeForLevel(lv) {
+  const t = Math.min(1, Math.max(0, (lv - 1) / 20));
+  const weights = SIZE_OPTIONS.map((_, i) => 1 + t * i * 1.2);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i += 1) {
+    r -= weights[i];
+    if (r <= 0) return SIZE_OPTIONS[i];
+  }
+  return SIZE_OPTIONS[SIZE_OPTIONS.length - 1];
+}
 
 function randPick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -326,7 +339,12 @@ function checkWin() {
   if (state.revealedCount === state.kings.length) {
     stopTimer();
     updateStatsUI();
-    overlay.hidden = false;
+    const kingEls = boardEl.querySelectorAll('.cell.king');
+    kingEls.forEach((el) => el.classList.add('win-pop'));
+    setTimeout(() => {
+      kingEls.forEach((el) => el.classList.remove('win-pop'));
+      overlay.hidden = false;
+    }, 1000);
     if (titleEl) titleEl.classList.add('win-celebration');
     if (boardContainerEl) boardContainerEl.classList.add('win-celebration');
     setTimeout(() => {
@@ -509,13 +527,6 @@ function setupEvents() {
     startGame(currentDifficulty);
   });
 
-  sizeSelect.addEventListener('change', () => {
-    size = Number(sizeSelect.value);
-    level = 1;
-    overlay.hidden = true;
-    startGame(currentDifficulty);
-  });
-
   diffButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const diff = btn.dataset.diff || 'hard';
@@ -541,6 +552,7 @@ function setupEvents() {
 }
 
 function startGame(difficulty = 'hard') {
+  size = weightedSizeForLevel(level);
   levelEl.textContent = String(level);
   overlay.hidden = true;
   if (titleEl) titleEl.classList.remove('win-celebration');

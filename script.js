@@ -24,9 +24,10 @@ let dragMoved = false;
 let dragStartIdx = -1;
 let lastDragIdx = -1;
 let dragVisited = new Set();
+let dragMode = 'add';
 let suppressClick = false;
 let lastTap = { time: 0, idx: -1 };
-let tapTimerId = null;
+let tapTimers = new Map();
 let lastPointerType = 'mouse';
 
 const SHOW_ILLEGAL_ON_KING = false;
@@ -342,10 +343,11 @@ function toggleFlag(idx) {
   updateBoardCell(idx);
 }
 
-function toggleFlagWithCount(idx, source) {
+function setFlagWithCount(idx, desired, source) {
   const cell = state.cells[idx];
   if (cell.revealed || cell.invalid) return false;
-  cell.flagged = !cell.flagged;
+  if (cell.flagged === desired) return false;
+  cell.flagged = desired;
   updateBoardCell(idx);
   if (source === 'drag') dragMarkCount += 1;
   return true;
@@ -382,6 +384,7 @@ function setupEvents() {
     dragStartIdx = Number(target.dataset.idx);
     lastDragIdx = dragStartIdx;
     dragVisited = new Set([dragStartIdx]);
+    dragMode = state.cells[dragStartIdx].flagged ? 'remove' : 'add';
   });
 
   boardEl.addEventListener('pointerover', (e) => {
@@ -397,11 +400,11 @@ function setupEvents() {
       if (!dragVisited.has(dragStartIdx)) {
         dragVisited.add(dragStartIdx);
       }
-      toggleFlagWithCount(dragStartIdx, 'drag');
+      setFlagWithCount(dragStartIdx, dragMode === 'add', 'drag');
     }
     if (!dragVisited.has(idx)) {
       dragVisited.add(idx);
-      toggleFlagWithCount(idx, 'drag');
+      setFlagWithCount(idx, dragMode === 'add', 'drag');
     }
   });
 
@@ -420,11 +423,11 @@ function setupEvents() {
       if (!dragVisited.has(dragStartIdx)) {
         dragVisited.add(dragStartIdx);
       }
-      toggleFlagWithCount(dragStartIdx, 'drag');
+      setFlagWithCount(dragStartIdx, dragMode === 'add', 'drag');
     }
     if (!dragVisited.has(idx)) {
       dragVisited.add(idx);
-      toggleFlagWithCount(idx, 'drag');
+      setFlagWithCount(idx, dragMode === 'add', 'drag');
     }
   });
 
@@ -434,6 +437,7 @@ function setupEvents() {
     dragStartIdx = -1;
     lastDragIdx = -1;
     dragVisited.clear();
+    dragMode = 'add';
   }
 
   window.addEventListener('pointerup', (e) => {
@@ -455,9 +459,10 @@ function setupEvents() {
       const idx = Number(target.dataset.idx);
       const now = Date.now();
       if (lastTap.idx === idx && now - lastTap.time < 350) {
-        if (tapTimerId) {
-          clearTimeout(tapTimerId);
-          tapTimerId = null;
+        const timerId = tapTimers.get(idx);
+        if (timerId) {
+          clearTimeout(timerId);
+          tapTimers.delete(idx);
         }
         checkCell(idx);
         updateBoardCell(idx);
@@ -465,12 +470,12 @@ function setupEvents() {
       } else {
         lastTap = { time: now, idx };
         if (!wasDragMoved) {
-          if (tapTimerId) clearTimeout(tapTimerId);
-          tapTimerId = setTimeout(() => {
+          const timerId = setTimeout(() => {
             clickCount += 1;
             toggleFlag(idx);
-            tapTimerId = null;
+            tapTimers.delete(idx);
           }, 300);
+          tapTimers.set(idx, timerId);
         }
       }
     }
